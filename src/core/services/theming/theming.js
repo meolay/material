@@ -253,10 +253,11 @@ var VALID_HUE_VALUES = [
 ];
 
 var themeConfig = {
-  disableTheming : false,   // Generate our themes at run time; also disable stylesheet DOM injection
-  generateOnDemand : false, // Whether or not themes are to be generated on-demand (vs. eagerly).
-  registeredStyles : [],    // Custom styles registered to be used in the theming of custom components.
-  nonce : null              // Nonce to be added as an attribute to the generated themes style tags.
+  disableTheming : false,    // Generate our themes at run time; also disable stylesheet DOM injection
+  generateOnDemand : false,  // Whether or not themes are to be generated on-demand (vs. eagerly).
+  registeredStyles : [],     // Custom styles registered to be used in the theming of custom components.
+  nonce : null,              // Nonce to be added as an attribute to the generated themes style tags.
+  replaceExistTheme : false  // For Replace dynamic theme exists 
 };
 
 /**
@@ -366,6 +367,10 @@ function ThemingProvider($mdColorPalette, $$mdMetaProvider) {
 
     alwaysWatchTheme: function(alwaysWatch) {
       alwaysWatchTheme = alwaysWatch;
+    },
+    
+    onReplaceExistTheme: function(replaceTheme) {
+      themeConfig.replaceExistTheme = replaceTheme;
     },
 
     enableBrowserColor: enableBrowserColor,
@@ -1042,8 +1047,10 @@ function generateAllThemes($injector, $mdTheming) {
 function generateTheme(theme, name, nonce) {
   var head = document.head;
   var firstChild = head ? head.firstElementChild : null;
-
-  if (!GENERATED[name]) {
+  var stylesAlive = (themeConfig.replaceExistTheme)? document.querySelectorAll('[md-theme-style=' + name + ']') : [];
+  
+  if (!GENERATED[name] || themeConfig.replaceExistTheme) {
+    
     // For each theme, use the color palettes specified for
     // `primary`, `warn` and `accent` to generate CSS rules.
     THEME_COLOR_TYPES.forEach(function(colorType) {
@@ -1052,7 +1059,7 @@ function generateTheme(theme, name, nonce) {
         var styleContent = styleStrings.shift();
         if (styleContent) {
           var style = document.createElement('style');
-          style.setAttribute('md-theme-style', '');
+          style.setAttribute('md-theme-style', name);
           if (nonce) {
             style.setAttribute('nonce', nonce);
           }
@@ -1063,6 +1070,12 @@ function generateTheme(theme, name, nonce) {
     });
 
     GENERATED[theme.name] = true;
+    
+    stylesAlive.forEach(function(style)
+		{
+			style.remove();
+		});
+    
   }
 
 }
